@@ -1,0 +1,373 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Language learning themed color palette */
+  --background: hsl(195, 35%, 98%);
+  --foreground: hsl(210, 40%, 8%);
+  --card: hsl(195, 25%, 95%);
+  --card-foreground: hsl(210, 40%, 8%);
+  --popover: hsl(195, 25%, 95%);
+  --popover-foreground: hsl(210, 40%, 8%);
+  
+  /* Deep teal - enhances cognitive focus for language learning */
+  --primary: hsl(175, 65%, 40%);
+  --primary-foreground: hsl(195, 35%, 98%);
+  
+  /* Warm coral - encourages speaking and interaction */
+  --secondary: hsl(15, 75%, 55%);
+  --secondary-foreground: hsl(195, 35%, 98%);
+  
+  /* Soft reading backgrounds */
+  --muted: hsl(195, 20%, 88%);
+  --muted-foreground: hsl(210, 25%, 40%);
+  
+  /* Golden accent - celebrates progress and achievements */
+  --accent: hsl(45, 85%, 58%);
+  --accent-foreground: hsl(210, 40%, 8%);
+  
+  /* Gentle warning tones */
+  --destructive: hsl(355, 70%, 55%);
+  --destructive-foreground: hsl(195, 35%, 98%);
+  
+  /* Clean language-friendly borders */
+  --border: hsl(195, 25%, 78%);
+  --input: hsl(195, 20%, 91%);
+  --ring: hsl(175, 65%, 40%);
+  --radius: 16px;
+  --font-sans: 'Inter', sans-serif;
+}
+
+.dark {
+  /* Language learning dark theme */
+  --background: hsl(210, 35%, 6%);
+  --foreground: hsl(195, 25%, 94%);
+  --card: hsl(210, 30%, 10%);
+  --card-foreground: hsl(195, 25%, 94%);
+  --popover: hsl(210, 30%, 10%);
+  --popover-foreground: hsl(195, 25%, 94%);
+  
+  /* Soft teal for nighttime focus */
+  --primary: hsl(175, 50%, 50%);
+  --primary-foreground: hsl(210, 35%, 6%);
+  
+  /* Warm coral for gentle interaction */
+  --secondary: hsl(15, 60%, 65%);
+  --secondary-foreground: hsl(210, 35%, 6%);
+  
+  /* Comfortable dark reading */
+  --muted: hsl(210, 25%, 16%);
+  --muted-foreground: hsl(195, 20%, 75%);
+  
+  /* Golden motivation */
+  --accent: hsl(45, 75%, 65%);
+  --accent-foreground: hsl(210, 35%, 6%);
+  
+  /* Soft error indication */
+  --destructive: hsl(355, 60%, 65%);
+  --destructive-foreground: hsl(210, 35%, 6%);
+  
+  /* Dark UI elements */
+  --border: hsl(210, 25%, 18%);
+  --input: hsl(210, 25%, 14%);
+  --ring: hsl(175, 50%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    /* Prevent zoom on iOS Safari */
+    -webkit-text-size-adjust: 100%;
+    /* Enhanced mobile scrolling */
+    -webkit-overflow-scrolling: touch;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+  }
+  
+  /* Mobile-first responsive improvements */
+  @media (max-width: 640px) {
+    body {
+      font-size: 16px; /* Prevent iOS zoom on input focus */
+    }
+  }
+}
+
+@layer components {
+  .african-pattern {
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 8px,
+        hsl(16, 80%, 50%, 0.06) 8px,
+        hsl(16, 80%, 50%, 0.06) 16px
+      );
+  }
+  
+  .african-geometric-pattern {
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(45, 85%, 60%, 0.08) 2px, transparent 2px),
+      radial-gradient(circle at 75% 75%, hsl(140, 40%, 45%, 0.08) 2px, transparent 2px);
+    background-size: 20px 20px;
+  }
+  
+  .african-waves-pattern {
+    background-image: 
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 4px,
+        hsl(30, 90%, 55%, 0.04) 4px,
+        hsl(30, 90%, 55%, 0.04) 8px
+      ),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 4px,
+        hsl(16, 80%, 50%, 0.04) 4px,
+        hsl(16, 80%, 50%, 0.04) 8px
+      );
+  }
+  
+  .african-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(45, 85%, 60%, 0.1) 0%,
+      hsl(16, 80%, 50%, 0.1) 50%,
+      hsl(140, 40%, 45%, 0.1) 100%
+    );
+  }
+  
+  .recording-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  
+  /* Enhanced mobile touch targets */
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mobile-optimized containers */
+  .mobile-container {
+    @apply px-4 sm:px-6;
+  }
+  
+  /* Improved mobile text scaling */
+  .mobile-text {
+    @apply text-base sm:text-lg;
+  }
+  
+  /* Mobile-friendly buttons */
+  .mobile-button {
+    @apply py-3 px-6 text-base min-h-[48px];
+  }
+  
+  /* Touch-friendly spacing */
+  .mobile-spacing {
+    @apply space-y-4 sm:space-y-6;
+  }
+  
+  /* Safe area support for mobile devices */
+  .safe-area-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-top {
+    padding-top: calc(1rem + env(safe-area-inset-top));
+  }
+  
+  /* Smooth animations */
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+  
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  /* Better button touch feedback */
+  .touch-feedback {
+    transition: all 0.2s ease;
+  }
+  
+  .touch-feedback:active {
+    transform: scale(0.95);
+  }
+  
+  /* Enhanced animated world logo */
+  .world-logo {
+    display: inline-block;
+    animation: world-orbit 12s ease-in-out infinite;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 4px 8px hsla(175, 65%, 40%, 0.3));
+    transform-origin: 50% 50%;
+  }
+  
+  .world-logo:hover {
+    animation: world-dance 3s ease-in-out infinite;
+    filter: drop-shadow(0 6px 12px hsla(175, 65%, 40%, 0.5));
+    transform: scale(1.1);
+  }
+  
+  @keyframes world-orbit {
+    0%, 100% { 
+      transform: rotate(0deg) scale(1) translateY(0px);
+    }
+    25% { 
+      transform: rotate(90deg) scale(1.05) translateY(-2px);
+    }
+    50% { 
+      transform: rotate(180deg) scale(1.1) translateY(0px);
+    }
+    75% { 
+      transform: rotate(270deg) scale(1.05) translateY(2px);
+    }
+  }
+  
+  @keyframes world-dance {
+    0%, 100% { 
+      transform: rotate(0deg) scale(1.1) translateY(0px);
+    }
+    33% { 
+      transform: rotate(120deg) scale(1.15) translateY(-4px);
+    }
+    66% { 
+      transform: rotate(240deg) scale(1.2) translateY(4px);
+    }
+  }
+  
+  /* Alternative gentle wobble animation */
+  .world-wobble {
+    display: inline-block;
+    animation: gentle-wobble 3s ease-in-out infinite;
+    transition: transform 0.3s ease;
+    transform-origin: center center;
+  }
+  
+  .world-wobble:hover {
+    transform: scale(1.15);
+    animation-duration: 1s;
+  }
+  
+  @keyframes gentle-wobble {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(5deg) scale(1.05); }
+    50% { transform: rotate(0deg) scale(1.1); }
+    75% { transform: rotate(-5deg) scale(1.05); }
+  }
+  
+  /* Artistic ECHO text with language theme */
+  .echo-text {
+    background: linear-gradient(
+      120deg,
+      hsl(175, 65%, 40%) 0%,
+      hsl(45, 85%, 58%) 25%,
+      hsl(15, 75%, 55%) 50%,
+      hsl(175, 65%, 40%) 75%,
+      hsl(45, 85%, 58%) 100%
+    );
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: artistic-flow 8s ease-in-out infinite;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-shadow: 0 4px 12px hsla(175, 65%, 40%, 0.3);
+    transform: perspective(1000px) rotateX(10deg);
+  }
+  
+  @keyframes artistic-flow {
+    0%, 100% { 
+      background-position: 0% 50%; 
+      transform: perspective(1000px) rotateX(10deg) scale(1);
+    }
+    25% { 
+      background-position: 50% 0%; 
+      transform: perspective(1000px) rotateX(5deg) scale(1.02);
+    }
+    50% { 
+      background-position: 100% 50%; 
+      transform: perspective(1000px) rotateX(0deg) scale(1.05);
+    }
+    75% { 
+      background-position: 50% 100%; 
+      transform: perspective(1000px) rotateX(5deg) scale(1.02);
+    }
+  }
+  
+  .waveform {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 40px;
+  }
+  
+  .waveform-bar {
+    width: 4px;
+    background: hsl(20, 65%, 45%);
+    border-radius: 2px;
+    animation: waveform 1.2s ease-in-out infinite;
+  }
+  
+  .waveform-bar:nth-child(1) { animation-delay: 0s; }
+  .waveform-bar:nth-child(2) { animation-delay: 0.1s; }
+  .waveform-bar:nth-child(3) { animation-delay: 0.2s; }
+  .waveform-bar:nth-child(4) { animation-delay: 0.3s; }
+  .waveform-bar:nth-child(5) { animation-delay: 0.4s; }
+  
+  .language-toggle {
+    background: linear-gradient(135deg, hsl(20, 65%, 45%) 0%, hsl(25, 85%, 62%) 100%);
+  }
+  
+  .translation-card {
+    background: hsl(35, 30%, 96%);
+    border: 1px solid hsl(35, 20%, 85%);
+    transition: all 0.3s ease;
+  }
+  
+  .translation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px hsl(20, 65%, 45%, 0.15);
+  }
+}
+
+@keyframes pulse {
+  0% { 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 hsl(0, 70%, 55%, 0.7); 
+  }
+  70% { 
+    transform: scale(1.05); 
+    box-shadow: 0 0 0 20px hsl(0, 70%, 55%, 0); 
+  }
+  100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 hsl(0, 70%, 55%, 0); 
+  }
+}
+
+@keyframes waveform {
+  0%, 40%, 100% { height: 8px; }
+  20% { height: 32px; }
+}
