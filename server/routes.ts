@@ -508,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Standard Mode: Audio → Text → Translation
         // Step 1: Speech to Text
         console.log('Converting speech to text...');
-        const sttResult = await speechService.speechToText(audioBuffer, sourceLanguage, model);
+        const sttResult = await speechService.speechToText(audioBuffer, sourceLanguage, model, selectedLanguages);
         
         originalText = typeof sttResult === 'string' ? sttResult : sttResult.text;
         const detectedLanguage = typeof sttResult === 'object' ? sttResult.detectedLanguage : undefined;
@@ -525,16 +525,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Auto-adjust target language if detected source matches the requested target
         if (sourceLanguage === 'auto' && detectedLanguage && detectedLanguage === targetLanguage) {
-          // If we detected the same language as the target, switch to the opposite
-          // For Kinyarwanda/English pair, switch to the other one
-          if (detectedLanguage === 'rw') {
-            finalTargetLanguage = 'en';
-          } else if (detectedLanguage === 'en') {
-            finalTargetLanguage = 'rw';
-          }
-          // For other languages, default to English
-          else {
-            finalTargetLanguage = 'en';
+          // If we detected the same language as the target, switch to the opposite language from the selected pair.
+          if (selectedLanguages) {
+            finalTargetLanguage = detectedLanguage === selectedLanguages.source
+              ? selectedLanguages.target
+              : selectedLanguages.source;
+          } else {
+            // Fallback for older clients or cases where selectedLanguages is not passed
+            if (detectedLanguage === 'rw') {
+              finalTargetLanguage = 'en';
+            } else if (detectedLanguage === 'en') {
+              finalTargetLanguage = 'rw';
+            } else {
+              // Cannot determine the other language in the pair, default to English
+              finalTargetLanguage = 'en';
+            }
           }
           console.log(`Auto-detected ${detectedLanguage}, auto-adjusted target to ${finalTargetLanguage}`);
         }
