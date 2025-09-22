@@ -5,10 +5,7 @@ import { speechService } from "./services/speech";
 import { translationService } from "./services/translation";
 import { translateRequestSchema, signupSchema, loginSchema, submitFeedbackRequestSchema, updateProfileSchema, changePasswordSchema, type TranslateResponse, type UsageLimitResponse, type SignupRequest, type LoginRequest, type SubmitFeedbackRequest, type FeedbackResponse, type UpdateProfileRequest, type ChangePasswordRequest } from "@shared/schema";
 import { z } from "zod";
-import { randomUUID } from "crypto";
 import multer from "multer";
-import { writeFile, unlink } from "fs/promises";
-import path from "path";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -564,17 +561,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const voiceName = settings?.voice || 'Zephyr';
         const translatedAudioBuffer = await speechService.textToSpeech(translatedText, finalTargetLanguage, voiceName);
-        
-        // Save audio file and generate URL
-        const audioFileName = `${randomUUID()}.wav`;
-        const audioFilePath = path.join(process.cwd(), 'dist', 'public', 'audio', audioFileName);
-        
-        // Ensure audio directory exists
-        const { mkdir } = await import('fs/promises');
-        await mkdir(path.dirname(audioFilePath), { recursive: true });
-        await writeFile(audioFilePath, translatedAudioBuffer);
-        translatedAudioUrl = `/audio/${audioFileName}`;
-        console.log('TTS audio saved successfully:', audioFileName);
+
+        // Convert audio buffer to a data URI for direct embedding in the response
+        const base64Audio = translatedAudioBuffer.toString('base64');
+        translatedAudioUrl = `data:audio/wav;base64,${base64Audio}`;
+        console.log('TTS audio generated and encoded as data URI.');
       } catch (error) {
         console.error('TTS error:', error);
         ttsAvailable = false;
@@ -612,7 +603,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         translatedText,
         originalLanguage: finalSourceLanguage,
         targetLanguage: finalTargetLanguage,
-        originalAudioUrl: undefined, // We could save original audio too
         translatedAudioUrl,
       });
       console.log('Translation saved to storage:', savedTranslation.id);
@@ -646,15 +636,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
-  // Serve audio files statically
-  const express = await import('express');
-  app.use("/audio", (req, res, next) => {
-    // Set CORS headers for audio files
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET');
-    next();
-  }, express.default.static(path.join(process.cwd(), 'dist', 'public', 'audio')));
 
   const httpServer = createServer(app);
   return httpServer;
