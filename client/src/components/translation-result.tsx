@@ -20,12 +20,19 @@ export function TranslationResult({
   const { isPlaying, playAudio } = useAudio();
   const { settings } = useSettings();
   const { toast } = useToast();
-  const hasAutoPlayed = useRef(false);
+  const lastPlayedId = useRef<string | null>(null);
   
-  // Auto-play translated audio if enabled (only once)
+  // Auto-play translated audio when a new translation arrives
   useEffect(() => {
-    if (settings.autoplay && translation.translatedAudioUrl && !isPlaying && !hasAutoPlayed.current) {
-      hasAutoPlayed.current = true;
+    if (
+      settings.autoplay &&
+      translation.translatedAudioUrl &&
+      !isPlaying &&
+      translation.id !== lastPlayedId.current
+    ) {
+      // Mark this translation ID as played to prevent re-playing on re-renders
+      lastPlayedId.current = translation.id;
+      
       const timer = setTimeout(() => {
         playAudio(translation.translatedAudioUrl!).catch(error => {
           console.log('Auto-play failed, audio may not be available:', error);
@@ -34,12 +41,7 @@ export function TranslationResult({
       
       return () => clearTimeout(timer);
     }
-  }, [translation.translatedAudioUrl, settings.autoplay, playAudio, isPlaying]);
-  
-  // Reset autoplay flag when translation changes
-  useEffect(() => {
-    hasAutoPlayed.current = false;
-  }, [translation.id]);
+  }, [translation.id, translation.translatedAudioUrl, settings.autoplay, playAudio, isPlaying]);
   
   const isAutoDetect = sourceLanguage === 'auto';
   const isEnglishSource = sourceLanguage === 'en';
