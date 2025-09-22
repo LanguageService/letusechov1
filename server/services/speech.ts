@@ -6,6 +6,15 @@ const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || "default_key",
 });
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 'zh': 'Chinese',
+  'ja': 'Japanese', 'ko': 'Korean', 'ar': 'Arabic', 'hi': 'Hindi', 'pt': 'Portuguese',
+  'ru': 'Russian', 'it': 'Italian', 'rw': 'Kinyarwanda', 'sw': 'Swahili', 'am': 'Amharic',
+  'yo': 'Yoruba', 'ha': 'Hausa', 'ig': 'Igbo'
+};
+
+const getLanguageName = (code: string) => LANGUAGE_NAMES[code] || code;
+
 interface WavConversionOptions {
   numChannels: number;
   sampleRate: number;
@@ -80,17 +89,6 @@ export class SpeechService {
       // Convert audio buffer to base64
       const base64Audio = audioBuffer.toString('base64');
 
-      // Get language names for prompts
-      const getLanguageName = (code: string) => {
-        const languages: Record<string, string> = {
-          'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 'zh': 'Chinese',
-          'ja': 'Japanese', 'ko': 'Korean', 'ar': 'Arabic', 'hi': 'Hindi', 'pt': 'Portuguese',
-          'ru': 'Russian', 'it': 'Italian', 'rw': 'Kinyarwanda', 'sw': 'Swahili', 'am': 'Amharic',
-          'yo': 'Yoruba', 'ha': 'Hausa', 'ig': 'Igbo'
-        };
-        return languages[code] || code;
-      };
-
       // Prepare the prompt for direct audio-to-translation
       let prompt: string;
       if (sourceLanguage === 'auto') {
@@ -156,7 +154,7 @@ export class SpeechService {
     }
   }
 
-  async speechToText(audioBuffer: Buffer, language: string, model: string = 'gemini-2.5-flash'): Promise<{ text: string; detectedLanguage?: string }> {
+  async speechToText(audioBuffer: Buffer, language: string, model: string = 'gemini-2.5-flash', selectedLanguages?: { source: string; target: string }): Promise<{ text: string; detectedLanguage?: string }> {
     try {
       console.log('Converting speech to text using Gemini...');
       
@@ -166,11 +164,16 @@ export class SpeechService {
       // Prepare the prompt based on language
       let languagePrompt: string;
       if (language === 'auto') {
-        languagePrompt = 'Generate a transcript of this speech. The audio contains either English or Kinyarwanda. Please transcribe it accurately in the detected language.';
+        if (selectedLanguages) {
+          const lang1 = getLanguageName(selectedLanguages.source);
+          const lang2 = getLanguageName(selectedLanguages.target);
+          languagePrompt = `Generate a transcript of this speech. The audio contains either ${lang1} or ${lang2}. Please transcribe it accurately in the detected language.`;
+        } else {
+          languagePrompt = 'Generate a transcript of this speech. Please transcribe it accurately in the detected language.';
+        }
       } else {
-        languagePrompt = language === 'en' 
-          ? 'Generate a transcript of this English speech.'
-          : 'Generate a transcript of this Kinyarwanda speech.';
+        const langName = getLanguageName(language);
+        languagePrompt = `Generate a transcript of this ${langName} speech.`;
       }
 
       const contents = [
@@ -196,9 +199,11 @@ export class SpeechService {
       console.log('Transcription successful:', transcript);
 
       // For auto-detect, try to determine the language of the transcribed text
-      let detectedLanguage: 'en' | 'rw' | undefined;
+      let detectedLanguage: string | undefined;
       if (language === 'auto') {
-        detectedLanguage = await this.detectLanguage(transcript);
+        if (selectedLanguages) {
+          detectedLanguage = await this.detectLanguage(transcript, selectedLanguages);
+        }
         console.log('Detected language:', detectedLanguage);
       }
 
@@ -209,9 +214,14 @@ export class SpeechService {
     }
   }
 
-  private async detectLanguage(text: string): Promise<'en' | 'rw'> {
+  private async detectLanguage(text: string, languages: { source: string; target: string }): Promise<string | undefined> {
     try {
-      const prompt = `Analyze this text and determine if it's written in English or Kinyarwanda. Respond with only "en" for English or "rw" for Kinyarwanda.
+      const lang1Name = getLanguageName(languages.source);
+      const lang2Name = getLanguageName(languages.target);
+      const lang1Code = languages.source;
+      const lang2Code = languages.target;
+
+      const prompt = `Analyze this text and determine if it's written in ${lang1Name} or ${lang2Name}. Respond with only "${lang1Code}" for ${lang1Name} or "${lang2Code}" for ${lang2Name}.
 
 Text: "${text}"`;
 
@@ -221,21 +231,15 @@ Text: "${text}"`;
       });
 
       const result = response.text?.trim().toLowerCase();
-      if (result === 'en' || result === 'rw') {
+      if (result === lang1Code || result === lang2Code) {
         return result;
       }
       
-      // Default fallback - if text contains mostly Latin characters, assume English
-      const latinChars = text.match(/[a-zA-Z]/g)?.length || 0;
-      const totalChars = text.replace(/\s/g, '').length;
-      return latinChars > totalChars * 0.7 ? 'en' : 'rw';
+      console.warn(`Language detection failed to identify between ${lang1Code} and ${lang2Code}. Result was: ${result}`);
+      return undefined;
     } catch (error) {
       console.error('Language detection error:', error);
-      // Fallback to simple heuristic
-      const commonEnglishWords = ['the', 'and', 'is', 'to', 'a', 'in', 'that', 'have', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at'];
-      const lowerText = text.toLowerCase();
-      const englishWordCount = commonEnglishWords.filter(word => lowerText.includes(word)).length;
-      return englishWordCount > 2 ? 'en' : 'rw';
+      return undefined;
     }
   }
 

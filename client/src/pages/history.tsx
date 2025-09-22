@@ -102,7 +102,7 @@ export default function History() {
                           {formatDistanceToNow(new Date(translation.createdAt), { addSuffix: true })}
                         </span>
                         <span className="text-xs bg-muted px-2 py-1 rounded">
-                          {isEnglishSource ? 'EN → RW' : 'RW → EN'}
+                          {translation.originalLanguage.toUpperCase()} → {translation.targetLanguage.toUpperCase()}
                         </span>
                       </div>
                       <p className="text-sm text-foreground font-medium" data-testid="text-original">
