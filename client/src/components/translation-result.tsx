@@ -37,7 +37,7 @@ export function TranslationResult({
         playAudio(translation.translatedAudioUrl!).catch(error => {
           console.log('Auto-play failed, audio may not be available:', error);
         });
-      }, 500); // Small delay to let the UI settle
+      }, 100); // Reduced delay for faster perceived response
       
       return () => clearTimeout(timer);
     }

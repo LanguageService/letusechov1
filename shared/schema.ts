@@ -16,22 +16,27 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table for custom authentication
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique().notNull(),
-  firstName: varchar("first_name").notNull(),
-  lastName: varchar("last_name").notNull(),
-  password: varchar("password").notNull(), // hashed password
-  country: varchar("country").notNull(),
-  currentCountryOfResident: varchar("current_country_of_resident").notNull(),
-  howTheyHeard: varchar("how_they_heard").notNull(),
-  organization: varchar("organization"), // optional
-  whatTheyDo: varchar("what_they_do").notNull(),
-  profileImageUrl: varchar("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    email: varchar("email").unique().notNull(),
+    firstName: varchar("first_name").notNull(),
+    lastName: varchar("last_name").notNull(),
+    password: varchar("password").notNull(), // hashed password
+    country: varchar("country").notNull(),
+    currentCountryOfResident: varchar("current_country_of_resident").notNull(),
+    howTheyHeard: varchar("how_they_heard").notNull(),
+    organization: varchar("organization"), // optional
+    whatTheyDo: varchar("what_they_do").notNull(),
+    profileImageUrl: varchar("profile_image_url"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    emailIndex: index("email_idx").on(table.email),
+  }),
+);
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -84,16 +89,24 @@ export const changePasswordSchema = z.object({
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
 
 // Usage tracking table for daily limits
-export const dailyUsage = pgTable("daily_usage", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id), // null for guest users  
-  sessionId: varchar("session_id"), // for tracking guest usage by session
-  ipAddress: varchar("ip_address"), // fallback for guest usage tracking
-  date: varchar("date").notNull(), // YYYY-MM-DD format
-  translationCount: integer("translation_count").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export const dailyUsage = pgTable(
+  "daily_usage",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").references(() => users.id), // null for guest users
+    sessionId: varchar("session_id"), // for tracking guest usage by session
+    ipAddress: varchar("ip_address"), // fallback for guest usage tracking
+    date: varchar("date").notNull(), // YYYY-MM-DD format
+    translationCount: integer("translation_count").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    userIdIndex: index("usage_user_id_idx").on(table.userId),
+    sessionIdIndex: index("usage_session_id_idx").on(table.sessionId),
+    ipAddressIndex: index("usage_ip_address_idx").on(table.ipAddress),
+  }),
+);
 
 export const insertDailyUsageSchema = createInsertSchema(dailyUsage).omit({
   id: true,
@@ -104,18 +117,25 @@ export const insertDailyUsageSchema = createInsertSchema(dailyUsage).omit({
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
 
-export const translations = pgTable("translations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id), // null for guest translations
-  sessionId: varchar("session_id"), // for tracking guest translations by session
-  originalText: text("original_text").notNull(),
-  translatedText: text("translated_text").notNull(),
-  originalLanguage: varchar("original_language", { length: 10 }).notNull(),
-  targetLanguage: varchar("target_language", { length: 10 }).notNull(),
-  originalAudioUrl: text("original_audio_url"),
-  translatedAudioUrl: text("translated_audio_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const translations = pgTable(
+  "translations",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").references(() => users.id), // null for guest translations
+    sessionId: varchar("session_id"), // for tracking guest translations by session
+    originalText: text("original_text").notNull(),
+    translatedText: text("translated_text").notNull(),
+    originalLanguage: varchar("original_language", { length: 10 }).notNull(),
+    targetLanguage: varchar("target_language", { length: 10 }).notNull(),
+    originalAudioUrl: text("original_audio_url"),
+    translatedAudioUrl: text("translated_audio_url"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdIndex: index("translations_user_id_idx").on(table.userId),
+    sessionIdIndex: index("translations_session_id_idx").on(table.sessionId),
+  }),
+);
 
 export const insertTranslationSchema = createInsertSchema(translations).omit({
   id: true,
