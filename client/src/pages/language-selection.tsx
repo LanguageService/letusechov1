@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowRight, Globe, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useLocation } from 'wouter';
 import { Header } from '@/components/header';
+import { PermissionModal } from '@/components/permission-modal';
 
 // Popular language pairs with their language codes and display names
 const LANGUAGES = [
@@ -30,6 +31,31 @@ const LANGUAGES = [
 export default function LanguageSelection() {
   const [, setLocation] = useLocation();
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [osInfo, setOsInfo] = useState({ os: 'Unknown', browser: 'Unknown' });
+
+  useEffect(() => {
+    const getOSAndBrowser = () => {
+      const userAgent = window.navigator.userAgent;
+      let os = 'Unknown';
+      let browser = 'Unknown';
+
+      if (/Mac/i.test(userAgent)) os = 'macOS';
+      else if (/Win/i.test(userAgent)) os = 'Windows';
+      else if (/Android/i.test(userAgent)) os = 'Android';
+      else if (/iPhone|iPad|iPod/i.test(userAgent)) os = 'iOS';
+
+      if (userAgent.includes("Firefox")) browser = "Firefox";
+      else if (userAgent.includes("SamsungBrowser")) browser = "Samsung Internet";
+      else if (userAgent.includes("Opera") || userAgent.includes("OPR")) browser = "Opera";
+      else if (userAgent.includes("Edge")) browser = "Edge";
+      else if (userAgent.includes("Chrome")) browser = "Chrome";
+      else if (userAgent.includes("Safari")) browser = "Safari";
+
+      setOsInfo({ os, browser });
+    };
+    getOSAndBrowser();
+  }, []);
 
   const handleLanguageSelect = (languageCode: string) => {
     if (selectedLanguages.includes(languageCode)) {
@@ -45,14 +71,25 @@ export default function LanguageSelection() {
   };
 
   const handleContinue = () => {
-    if (selectedLanguages.length === 2) {
-      // Store language selection with first as source, second as target by default
-      localStorage.setItem('selectedLanguages', JSON.stringify({
-        source: selectedLanguages[0],
-        target: selectedLanguages[1]
-      }));
-      setLocation('/translate');
-    }
+    if (selectedLanguages.length !== 2) return;
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        // Permission granted, we can stop the track immediately as we don't need it here.
+        stream.getTracks().forEach(track => track.stop());
+
+        // Store language selection and navigate
+        localStorage.setItem('selectedLanguages', JSON.stringify({
+          source: selectedLanguages[0],
+          target: selectedLanguages[1]
+        }));
+        setLocation('/translate');
+      })
+      .catch(err => {
+        console.error('Microphone access denied:', err);
+        // Show instructions on how to grant permission
+        setShowPermissionModal(true);
+      });
   };
 
   const handleLanguageSwap = () => {
@@ -187,6 +224,13 @@ export default function LanguageSelection() {
           )}
         </div>
       </main>
+
+      <PermissionModal
+        isOpen={showPermissionModal}
+        onClose={() => setShowPermissionModal(false)}
+        os={osInfo.os}
+        browser={osInfo.browser}
+      />
     </div>
   );
 }
