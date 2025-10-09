@@ -19,43 +19,62 @@ const getInstructions = (os: string, browser: string) => {
   const osLower = os.toLowerCase();
   const browserLower = browser.toLowerCase();
 
-  if (osLower.includes('mac')) {
-    if (browserLower.includes('chrome')) {
-      return [
-        'Open Chrome Preferences > Privacy and security > Site Settings > Microphone.',
-        'Find this site and set to "Allow".',
-        'Also, check macOS System Settings > Privacy & Security > Microphone, and ensure Chrome is enabled.',
-      ];
-    }
+  // macOS
+  if (osLower.includes('mac') || osLower.includes('macos')) {
     if (browserLower.includes('safari')) {
       return [
         'Open Safari > Settings > Websites > Microphone.',
-        'Find this site and set to "Allow".',
-        'Also, check macOS System Settings > Privacy & Security > Microphone, and ensure Safari is enabled.',
+        'Find this site in the list and set its permission to "Allow".',
+        'Then, check macOS System Settings > Privacy & Security > Microphone, and ensure Safari is enabled.',
+      ];
+    } else { // Chrome, Firefox, Edge, etc. on macOS
+      return [
+        `In ${browser}, go to Settings > Privacy and security > Site Settings > Microphone.`,
+        'Find this site and change the permission to "Allow".',
+        `Also, check macOS System Settings > Privacy & Security > Microphone, and ensure ${browser} has access.`,
       ];
     }
   }
 
+  // Windows
   if (osLower.includes('windows')) {
     return [
       'Go to Windows Settings > Privacy & security > Microphone.',
       'Ensure "Microphone access" and "Let apps access your microphone" are turned on.',
-      `In your browser settings, find Microphone permissions and allow this site.`,
+      `In ${browser}'s settings, find Microphone permissions and allow this site.`,
     ];
   }
 
+  // Android
   if (osLower.includes('android')) {
-    return [
-      'Go to Settings > Apps > [Your Browser] > Permissions > Microphone.',
-      'Set to "Allow".',
-    ];
+    if (browserLower.includes('chrome')) {
+      return [
+        `In Chrome, tap the three dots ⋮ > Settings > Site settings > Microphone.`,
+        'Find this site and tap on it, then select "Allow".',
+        'If it still fails, go to Android Settings > Apps > Chrome > Permissions > Microphone, and set to "Allow".',
+      ];
+    } else {
+      return [
+        `Go to Android Settings > Apps > ${browser} > Permissions > Microphone.`,
+        'Set the permission to "Allow".',
+      ];
+    }
   }
 
+  // iOS
   if (osLower.includes('ios')) {
-    return [
-      'Go to iOS Settings > Privacy & Security > Microphone.',
-      'Find your browser in the list and turn the toggle on.',
-    ];
+    if (browserLower.includes('safari')) {
+      return [
+        'First, tap the "aA" icon in the address bar > Website Settings > Microphone, and select "Allow".',
+        'If that doesn\'t work, go to iOS Settings > Safari > Microphone (under "Settings for Websites"), and set to "Allow".',
+        'Finally, check iOS Settings > Privacy & Security > Microphone, and ensure Safari is enabled.',
+      ];
+    } else { // Chrome, Firefox, etc. on iOS
+      return [
+        'Go to iOS Settings > Privacy & Security > Microphone.',
+        `Find ${browser} in the list and make sure the toggle is ON.`,
+      ];
+    }
   }
 
   return [
