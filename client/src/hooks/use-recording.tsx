@@ -6,13 +6,18 @@ export function useRecording() {
   const [recorder] = useState(() => new AudioRecorder());
 
   const startRecording = useCallback(async () => {
-    try {
-      await recorder.startRecording();
-      setIsRecording(true);
-    } catch (error) {
-      console.error('Failed to start recording:', error);
-      throw error;
-    }
+    return new Promise<void>((resolve, reject) => {
+      recorder.startRecording(
+        () => {
+          setIsRecording(true);
+          resolve();
+        },
+        (error) => {
+          setIsRecording(false);
+          reject(error);
+        }
+      );
+    });
   }, [recorder]);
 
   const stopRecording = useCallback(async (): Promise<string> => {

@@ -3,33 +3,36 @@ export class AudioRecorder {
   private audioChunks: Blob[] = [];
   private stream: MediaStream | null = null;
 
-  async startRecording(): Promise<void> {
-    try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ 
+  startRecording(onSuccess: () => void, onError: (error: Error) => void): void {
+    // Use a promise-based approach to handle the async nature of getUserMedia
+    navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           sampleRate: 16000
         } 
+      })
+      .then(stream => {
+        this.stream = stream;
+        this.mediaRecorder = new MediaRecorder(this.stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+        
+        this.audioChunks = [];
+        
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
+        
+        this.mediaRecorder.start();
+        onSuccess();
+      })
+      .catch(error => {
+        console.error('Error starting recording:', error);
+        onError(error);
       });
-      
-      this.mediaRecorder = new MediaRecorder(this.stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      
-      this.audioChunks = [];
-      
-      this.mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          this.audioChunks.push(event.data);
-        }
-      };
-      
-      this.mediaRecorder.start();
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      throw new Error('Failed to start recording. Please check microphone permissions.');
-    }
   }
 
   async stopRecording(): Promise<Blob> {

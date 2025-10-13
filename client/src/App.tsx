@@ -18,6 +18,7 @@ import Profile from "@/pages/profile";
 import Credits from "@/pages/credits";
 import ProfileSetup from "@/pages/profile-setup";
 import NotFound from "@/pages/not-found";
+import { StatsPage } from "./pages/stats-page";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -50,6 +51,7 @@ function Router() {
         <Route path="/saved" component={isAuthenticated ? Saved : NotFound} />
         <Route path="/profile" component={isAuthenticated ? Profile : NotFound} />
         <Route path="/credits" component={isAuthenticated ? Credits : NotFound} />
+        <Route path="/stats" component={StatsPage} />
         <Route path="/:rest*" component={NotFound} />
       </Switch>
 

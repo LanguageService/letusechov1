@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { speechService } from "./services/speech";
-import { translationService } from "./services/translation";
+import { translationService, TranslationService } from "./services/translation";
 import { translateRequestSchema, signupSchema, loginSchema, submitFeedbackRequestSchema, updateProfileSchema, changePasswordSchema, type TranslateResponse, type UsageLimitResponse, type SignupRequest, type LoginRequest, type SubmitFeedbackRequest, type FeedbackResponse, type UpdateProfileRequest, type ChangePasswordRequest } from "@shared/schema";
 import { z } from "zod";
 import multer from "multer";
@@ -381,6 +381,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all translations with stats
+  app.get('/api/stats', async (req, res) => {
+    try {
+      // In a real app, you'd want to protect this endpoint
+      const translations = await storage.getAllTranslationsWithStats();
+      res.json(translations);
+    } catch (error) {
+      console.error("Error fetching translation stats:", error);
+      res.status(500).json({ message: "Failed to fetch translation stats" });
+    }
+  });
+
   // Get translations history endpoint - scoped to current user/session
   app.get('/api/translations', async (req: any, res) => {
     try {
@@ -481,6 +493,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let translatedText: string;
       let finalSourceLanguage: string;
       let finalTargetLanguage: string;
+      let transcriptionDuration = 0;
+      let translationDuration = 0;
+      let ttsDuration = 0;
+      let directTranslationDuration = 0;
 
       console.log('Checking mode - superFastMode:', settings?.superFastMode);
       
@@ -489,6 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Super Fast Mode: Converting audio directly to translated text...');
         const directResult = await speechService.audioToTranslatedText(audioBuffer, sourceLanguage, targetLanguage, model, selectedLanguages);
         
+        directTranslationDuration = directResult.duration;
         translatedText = directResult.translatedText;
         finalTargetLanguage = directResult.targetLanguage;
         
@@ -507,6 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Converting speech to text...');
         const sttResult = await speechService.speechToText(audioBuffer, sourceLanguage, model, selectedLanguages);
         
+        transcriptionDuration = sttResult.duration + (sttResult.langDetectDuration || 0);
         originalText = typeof sttResult === 'string' ? sttResult : sttResult.text;
         const detectedLanguage = typeof sttResult === 'object' ? sttResult.detectedLanguage : undefined;
         
@@ -545,11 +563,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Step 2: Translate text
         console.log('Translating text...');
+        const translationStartTime = performance.now();
         translatedText = await translationService.translateText(
           originalText, 
           finalSourceLanguage, 
           finalTargetLanguage
         );
+        translationDuration = performance.now() - translationStartTime;
       }
 
       // Step 3: Text to Speech for translated text
@@ -560,7 +580,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         const voiceName = settings?.voice || 'Zephyr';
-        const translatedAudioBuffer = await speechService.textToSpeech(translatedText, finalTargetLanguage, voiceName);
+        const ttsResult = await speechService.textToSpeech(translatedText, finalTargetLanguage, voiceName);
+        const translatedAudioBuffer = ttsResult.audioBuffer;
+        ttsDuration = ttsResult.duration;
 
         // Convert audio buffer to a data URI for direct embedding in the response
         const base64Audio = translatedAudioBuffer.toString('base64');
@@ -604,6 +626,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         originalLanguage: finalSourceLanguage,
         targetLanguage: finalTargetLanguage,
         translatedAudioUrl,
+        transcriptionDuration: settings?.superFastMode ? directTranslationDuration : transcriptionDuration,
+        translationDuration,
+        ttsDuration,
       });
       console.log('Translation saved to storage:', savedTranslation.id);
 
