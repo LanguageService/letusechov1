@@ -79,7 +79,7 @@ function convertToWav(rawData: string, mimeType: string): Buffer {
 }
 
 export class SpeechService {
-  async audioToTranslatedText(audioBuffer: Buffer, sourceLanguage: string, targetLanguage: string, model: string = 'gemini-2.5-flash', selectedLanguages?: { source: string; target: string }): Promise<{ translatedText: string; detectedSourceLanguage?: string; targetLanguage: string }> {
+  async audioToTranslatedText(audioBuffer: Buffer, sourceLanguage: string, targetLanguage: string, model: string = 'gemini-2.5-flash', selectedLanguages?: { source: string; target: string }): Promise<{ translatedText: string; detectedSourceLanguage?: string; targetLanguage: string; duration: number }> {
     try {
       console.log('🚀 SPEECH SERVICE - Converting audio directly to translated text using Gemini...');
       console.log('sourceLanguage:', sourceLanguage);
@@ -123,12 +123,14 @@ export class SpeechService {
         },
       ];
 
+      const startTime = performance.now();
       const response = await gemini.models.generateContent({
         model: model,
         contents: contents,
       });
-
+      const duration = performance.now() - startTime;
       const translatedText = response.text?.trim();
+
       if (!translatedText) {
         throw new Error('No translation returned from Gemini');
       }
@@ -147,14 +149,14 @@ export class SpeechService {
         // targetLanguage is already passed as parameter
       }
 
-      return { translatedText, detectedSourceLanguage, targetLanguage };
+      return { translatedText, detectedSourceLanguage, targetLanguage, duration };
     } catch (error) {
       console.error('Direct audio translation error:', error);
       throw new Error('Failed to translate audio directly. Please try again.');
     }
   }
 
-  async speechToText(audioBuffer: Buffer, language: string, model: string = 'gemini-2.5-flash', selectedLanguages?: { source: string; target: string }): Promise<{ text: string; detectedLanguage?: string }> {
+  async speechToText(audioBuffer: Buffer, language: string, model: string = 'gemini-2.5-flash', selectedLanguages?: { source: string; target: string }): Promise<{ text: string; detectedLanguage?: string; duration: number; langDetectDuration: number }> {
     try {
       console.log('Converting speech to text using Gemini...');
       
@@ -186,12 +188,14 @@ export class SpeechService {
         },
       ];
 
+      const startTime = performance.now();
       const response = await gemini.models.generateContent({
         model: model,
         contents: contents,
       });
-
+      let duration = performance.now() - startTime;
       const transcript = response.text?.trim();
+
       if (!transcript) {
         throw new Error('No transcript returned from Gemini');
       }
@@ -200,28 +204,32 @@ export class SpeechService {
 
       // For auto-detect, try to determine the language of the transcribed text
       let detectedLanguage: string | undefined;
+      let langDetectDuration = 0;
       if (language === 'auto') {
         if (selectedLanguages) {
-          detectedLanguage = await this.detectLanguage(transcript, selectedLanguages);
+          const langDetectResult = await this.detectLanguage(transcript, selectedLanguages);
+          detectedLanguage = langDetectResult.language;
+          langDetectDuration = langDetectResult.duration;
         }
         console.log('Detected language:', detectedLanguage);
       }
 
-      return { text: transcript, detectedLanguage };
+      return { text: transcript, detectedLanguage, duration, langDetectDuration };
     } catch (error) {
       console.error('Speech-to-text error:', error);
       throw new Error('Failed to transcribe audio. Please check your audio input and try again.');
     }
   }
 
-  private async detectLanguage(text: string, languages: { source: string; target: string }): Promise<string | undefined> {
+  private async detectLanguage(text: string, languages: { source: string; target: string }): Promise<{ language: string | undefined, duration: number }> {
     try {
+      const startTime = performance.now();
       const lang1Name = getLanguageName(languages.source);
       const lang2Name = getLanguageName(languages.target);
       const lang1Code = languages.source;
       const lang2Code = languages.target;
 
-      const prompt = `Analyze this text and determine if it's written in ${lang1Name} or ${lang2Name}. Respond with only "${lang1Code}" for ${lang1Name} or "${lang2Code}" for ${lang2Name}.
+      const prompt = `Analyze this text and determine if it's written in ${lang1Name} or ${lang2Name}. Respond with only "${lang1Code}" for ${lang1Name} or "${lang2Code}" for ${lang2Name}. Do not add any other text or markdown.
 
 Text: "${text}"`;
 
@@ -229,21 +237,22 @@ Text: "${text}"`;
         model: 'gemini-2.5-flash',
         contents: [{ text: prompt }],
       });
+      const duration = performance.now() - startTime;
 
       const result = response.text?.trim().toLowerCase();
       if (result === lang1Code || result === lang2Code) {
-        return result;
+        return { language: result, duration };
       }
       
       console.warn(`Language detection failed to identify between ${lang1Code} and ${lang2Code}. Result was: ${result}`);
-      return undefined;
+      return { language: undefined, duration };
     } catch (error) {
       console.error('Language detection error:', error);
-      return undefined;
+      return { language: undefined, duration: 0 };
     }
   }
 
-  async textToSpeech(text: string, language: string, voiceName: string = 'Serene'): Promise<Buffer> {
+  async textToSpeech(text: string, language: string, voiceName: string = 'Serene'): Promise<{ audioBuffer: Buffer; duration: number }> {
     try {
       console.log(`Generating TTS for text: "${text}" in language: ${language}`);
       
@@ -269,12 +278,14 @@ Text: "${text}"`;
       }];
 
       console.log('Sending TTS request to Gemini...');
+      const startTime = performance.now();
       const response = await gemini.models.generateContent({
         model: 'gemini-2.5-flash-preview-tts',
         config,
         contents,
       });
-
+      const duration = performance.now() - startTime;
+      
       console.log('Received TTS response from Gemini');
       console.log('Response structure:', JSON.stringify(response, null, 2));
       
@@ -284,7 +295,7 @@ Text: "${text}"`;
         const fallbackText = `Audio for: ${text}`;
         const fallbackBuffer = Buffer.from(fallbackText, 'utf-8');
         console.log('Using fallback audio buffer');
-        return fallbackBuffer;
+        return { audioBuffer: fallbackBuffer, duration: 0 };
       }
 
       const candidate = response.candidates[0];
@@ -318,7 +329,7 @@ Text: "${text}"`;
           }
           
           console.log('TTS audio generated successfully, size:', audioBuffer.length);
-          return audioBuffer;
+          return { audioBuffer, duration };
         }
         
         if (part.text) {

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Mic, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRecording } from "@/hooks/use-recording";
@@ -5,6 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/contexts/settings-context";
+import { PermissionModal } from "@/components/permission-modal";
+import { UAParser } from "ua-parser-js";
 import type {
   TranslateRequest,
   TranslateResponse,
@@ -25,6 +28,8 @@ export function RecordingInterface({
   const { isRecording, startRecording, stopRecording } = useRecording();
   const { toast } = useToast();
   const { settings } = useSettings();
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
+  const [deviceInfo, setDeviceInfo] = useState({ os: "", browser: "" });
   const queryClient = useQueryClient();
 
   const translateMutation = useMutation({
@@ -92,12 +97,21 @@ export function RecordingInterface({
     if (!isRecording) {
       try {
         await startRecording();
-      } catch (error) {
-        toast({
-          title: "Recording Failed",
-          description: "Please check microphone permissions and try again.",
-          variant: "destructive",
-        });
+      } catch (error: any) {
+        console.error("Microphone access error:", error.name, error.message);
+
+        if (error.name === "NotAllowedError") {
+          const parser = new UAParser();
+          const result = parser.getResult();
+          setDeviceInfo({
+            os: result.os.name || "Unknown OS",
+            browser: result.browser.name || "Unknown Browser",
+          });
+          setShowPermissionModal(true);
+        } else {
+          const description = "Could not access the microphone. Please ensure it's not in use by another app and check permissions.";
+          toast({ title: "Recording Failed", description, variant: "destructive" });
+        }
       }
     } else {
       try {
@@ -173,7 +187,7 @@ export function RecordingInterface({
   const isTranslating = translateMutation.isPending;
 
   return (
-    <div className="bg-gradient-to-br from-card via-card/95 to-card african-gradient rounded-xl p-4 sm:p-8 shadow-xl border-2 border-primary/10 text-center mobile-spacing">
+    <>
       <div>
         <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2 flex items-center justify-center mobile-text">
           <span className="mr-2 text-xl sm:text-2xl">
@@ -263,6 +277,13 @@ export function RecordingInterface({
           </Button>
         </div>
       )}
-    </div>
+
+      <PermissionModal
+        isOpen={showPermissionModal}
+        onClose={() => setShowPermissionModal(false)}
+        os={deviceInfo.os}
+        browser={deviceInfo.browser}
+      />
+    </>
   );
 }
