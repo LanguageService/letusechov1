@@ -18,7 +18,7 @@ import Profile from "@/pages/profile";
 import Credits from "@/pages/credits";
 import ProfileSetup from "@/pages/profile-setup";
 import NotFound from "@/pages/not-found";
-import { StatsPage } from "./pages/stats-page";
+import { StatsPage } from "@/pages/stats-page";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
