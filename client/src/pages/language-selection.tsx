@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Globe, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +42,7 @@ export default function LanguageSelection() {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([]);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [osInfo, setOsInfo] = useState({ os: 'Unknown', browser: 'Unknown' });
+  const continueCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const getOSAndBrowser = () => {
@@ -65,6 +66,14 @@ export default function LanguageSelection() {
     };
     getOSAndBrowser();
   }, []);
+
+  useEffect(() => {
+    if (selectedLanguages.length === 2) {
+      setTimeout(() => {
+        continueCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100); // A small delay ensures the element is rendered and ready.
+    }
+  }, [selectedLanguages.length]);
 
   const handleLanguageSelect = (languageCode: string) => {
     if (selectedLanguages.includes(languageCode)) {
@@ -197,7 +206,10 @@ export default function LanguageSelection() {
 
           {/* Selection Summary & Continue */}
           {selectedLanguages.length === 2 && (
-            <Card className="p-6 bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 border-2 border-primary/30 african-gradient shadow-xl">
+            <Card
+              ref={continueCardRef}
+              className="p-6 bg-gradient-to-r from-primary/10 via-accent/10 to-secondary/10 border-2 border-primary/30 african-gradient shadow-xl"
+            >
               <div className="text-center space-y-4">
                 <div className="mb-2">
                   <Button
