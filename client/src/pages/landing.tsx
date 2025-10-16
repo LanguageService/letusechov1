@@ -89,24 +89,29 @@ export default function Landing() {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <Button
+            <div className="relative">
+              <Badge variant="secondary" className="absolute -top-2 -right-2 z-10">3 Free</Badge>
+              <Button
               size="lg"
-              className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700"
-              onClick={handleSignup}
-              data-testid="button-signup"
-            >
-              <Users className="w-5 h-5 mr-2" />
-              Create Account
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="px-8 py-3 text-lg"
+              variant="default"
+              className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700 text-white"
               onClick={handleTryDemo}
               data-testid="button-try-demo"
             >
               Try Demo (3 free translations)
-            </Button>
+              </Button>
+            </div>
+            <div className="relative">
+              <Button
+                size="lg"
+                className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700"
+                onClick={handleSignup}
+                data-testid="button-signup"
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Create Account
+              </Button>
+            </div>
           </div>
 
           <div className="text-center mb-12">
