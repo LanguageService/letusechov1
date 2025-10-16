@@ -2,14 +2,17 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { speechService } from "./services/speech";
-import { translationService, TranslationService } from "./services/translation";
+import { translationService } from "./services/translation";
 import { translateRequestSchema, signupSchema, loginSchema, submitFeedbackRequestSchema, updateProfileSchema, changePasswordSchema, type TranslateResponse, type UsageLimitResponse, type SignupRequest, type LoginRequest, type SubmitFeedbackRequest, type FeedbackResponse, type UpdateProfileRequest, type ChangePasswordRequest } from "@shared/schema";
-import { z } from "zod";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import rateLimit from "express-rate-limit";
+import path from "path";
+import fs from "fs/promises";
+import { randomUUID } from "crypto";
+import express from "express";
 
 // Configure multer for audio uploads
 const upload = multer({ 
@@ -103,6 +106,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session middleware
   app.set("trust proxy", 1);
   setupSession(app);
+
+  // --- Static File Serving ---
+  // Create public directories for uploads if they don't exist
+  const audioUploadDir = path.join(process.cwd(), "public", "uploads", "audio");
+  await fs.mkdir(audioUploadDir, { recursive: true });
+
+  // Serve static files from the 'public' directory
+  app.use(express.static(path.join(process.cwd(), "public")));
+  // --- End Static File Serving ---
 
   // Rate limiting for auth endpoints
   const authLimiter = rateLimit({
@@ -488,6 +500,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert base64 audio to buffer
       const audioBuffer = Buffer.from(audioData, 'base64');
 
+      // --- Save original audio to a file ---
+      const originalAudioFilename = `${randomUUID()}.wav`;
+      const originalAudioPath = path.join(audioUploadDir, originalAudioFilename);
+      await fs.writeFile(originalAudioPath, audioBuffer);
+      const originalAudioUrl = `/uploads/audio/${originalAudioFilename}`;
+      // --- End save original audio ---
+
       const model = settings?.model || 'gemini-2.5-flash';
       let originalText: string;
       let translatedText: string;
@@ -583,11 +602,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const ttsResult = await speechService.textToSpeech(translatedText, finalTargetLanguage, voiceName);
         const translatedAudioBuffer = ttsResult.audioBuffer;
         ttsDuration = ttsResult.duration;
-
-        // Convert audio buffer to a data URI for direct embedding in the response
-        const base64Audio = translatedAudioBuffer.toString('base64');
-        translatedAudioUrl = `data:audio/wav;base64,${base64Audio}`;
-        console.log('TTS audio generated and encoded as data URI.');
+        
+        // --- Save translated audio to a file ---
+        const translatedAudioFilename = `${randomUUID()}.wav`;
+        const translatedAudioPath = path.join(audioUploadDir, translatedAudioFilename);
+        await fs.writeFile(translatedAudioPath, translatedAudioBuffer);
+        translatedAudioUrl = `/uploads/audio/${translatedAudioFilename}`;
+        console.log('TTS audio generated and saved to file.');
+        // --- End save translated audio ---
       } catch (error) {
         console.error('TTS error:', error);
         ttsAvailable = false;
@@ -625,6 +647,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         translatedText,
         originalLanguage: finalSourceLanguage,
         targetLanguage: finalTargetLanguage,
+        originalAudioUrl,
         translatedAudioUrl,
         transcriptionDuration: settings?.superFastMode ? directTranslationDuration : transcriptionDuration,
         translationDuration,
@@ -639,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         translatedText,
         originalLanguage: finalSourceLanguage,
         targetLanguage: finalTargetLanguage,
-        originalAudioUrl: undefined,
+        originalAudioUrl,
         translatedAudioUrl,
         ttsAvailable,
         ttsError,

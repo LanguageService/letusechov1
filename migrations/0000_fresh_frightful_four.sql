@@ -1,3 +1,4 @@
+-- CREATE TABLE "daily_usage" (
 CREATE TABLE "daily_usage" (
 	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" varchar,

@@ -43,8 +43,8 @@ function Router() {
     <>
       <Switch>
         <Route path="/" component={isAuthenticated ? LanguageSelection : Landing} />
-        <Route path="/signup" component={Signup} />
-        <Route path="/login" component={Login} />
+        <Route path="/signup" component={isAuthenticated ? LanguageSelection : Signup} />
+        <Route path="/login" component={isAuthenticated ? LanguageSelection : Login} />
         <Route path="/translate" component={Translate} />
         <Route path="/language-selection" component={LanguageSelection} />
         <Route path="/history" component={isAuthenticated ? History : NotFound} />
