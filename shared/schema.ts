@@ -154,7 +154,7 @@ export const settingsSchema = z.object({
   voice: z.enum(getDisplayVoiceNames() as [string, ...string[]]).default('Serene'),
   autoplay: z.boolean().default(true),
   autoDetectLanguage: z.boolean().default(true),
-  superFastMode: z.boolean().default(false),
+  superFastMode: z.boolean().default(true),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;
