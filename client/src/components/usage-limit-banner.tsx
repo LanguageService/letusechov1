@@ -3,19 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUsageLimit } from "@/hooks/useUsageLimit";
 import { AlertTriangle, Infinity, Users } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function UsageLimitBanner() {
   const { usageInfo, isLoading } = useUsageLimit();
+  const [, setLocation] = useLocation();
 
   if (isLoading || !usageInfo) {
     return null;
   }
 
-  const { isAuthenticated, remainingTranslations, limitMessage } = usageInfo;
+  const handleSignup = () => {
+    setLocation("/signup");
+  };
 
   const handleLogin = () => {
-    window.location.href = "/signup";
+    setLocation("/login");
   };
+
+  const { isAuthenticated, remainingTranslations, limitMessage } = usageInfo;
 
   if (isAuthenticated) {
     // Show bronze badge for authenticated users
@@ -56,7 +62,7 @@ export default function UsageLimitBanner() {
             </div>
             <Button
               size="sm"
-              variant="outline"
+              variant="default"
               onClick={handleLogin}
               data-testid="button-upgrade-banner"
               className="border-blue-300 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900"
@@ -87,7 +93,7 @@ export default function UsageLimitBanner() {
             </div>
             <Button
               size="sm"
-              onClick={handleLogin}
+              onClick={handleSignup}
               data-testid="button-upgrade-last"
               className="bg-orange-600 hover:bg-orange-700"
             >
@@ -115,14 +121,24 @@ export default function UsageLimitBanner() {
                 {limitMessage}
               </div>
             </div>
-            <Button
-              onClick={handleLogin}
-              data-testid="button-upgrade-limit"
-              className="bg-red-600 hover:bg-red-700 ml-4"
-            >
-              <Users className="w-4 h-4 mr-1" />
-              Sign Up for Bronze
-            </Button>
+            <div className="flex items-center space-x-2 ml-4">
+              <Button
+                onClick={handleLogin}
+                data-testid="button-login-limit"
+                variant="outline"
+                className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-600 dark:text-red-300 dark:hover:bg-red-900"
+              >
+                Login
+              </Button>
+              <Button
+                onClick={handleSignup}
+                data-testid="button-signup-limit"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Users className="w-4 h-4 mr-1" />
+                Sign Up
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, index, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, index, integer, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { getDisplayVoiceNames } from "./voice-mapping";
@@ -127,8 +127,11 @@ export const translations = pgTable(
     translatedText: text("translated_text").notNull(),
     originalLanguage: varchar("original_language", { length: 10 }).notNull(),
     targetLanguage: varchar("target_language", { length: 10 }).notNull(),
-    originalAudioUrl: text("original_audio_url"),
+    originalAudioUrl: text("original_audio_url"), // To store the original audio
     translatedAudioUrl: text("translated_audio_url"),
+    transcriptionDuration: real("transcription_duration"),
+    translationDuration: real("translation_duration"),
+    ttsDuration: real("tts_duration"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({

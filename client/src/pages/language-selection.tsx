@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, Globe, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card } from '@/components/ui/card';
 import { useLocation } from 'wouter';
 import { Header } from '@/components/header';
@@ -27,6 +33,9 @@ const LANGUAGES = [
   { code: 'ha', name: 'Hausa', flag: '🇳🇬' },
   { code: 'ig', name: 'Igbo', flag: '🇳🇬' },
 ];
+
+const pilotLanguages = LANGUAGES.filter(lang => ['en', 'rw', 'sw'].includes(lang.code));
+const comingSoonLanguages = LANGUAGES.filter(lang => !['en', 'rw', 'sw'].includes(lang.code));
 
 export default function LanguageSelection() {
   const [, setLocation] = useLocation();
@@ -136,22 +145,16 @@ export default function LanguageSelection() {
             </div>
             
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-6">
-              {LANGUAGES.map((language) => {
+              {pilotLanguages.map((language) => {
                 const isSelected = selectedLanguages.includes(language.code);
                 const selectionOrder = selectedLanguages.indexOf(language.code) + 1;
-                const isPilotLanguage = language.code === 'en' || language.code === 'rw' || language.code === 'sw';
                 
                 return (
                   <Button
                     key={language.code}
                     variant={isSelected ? "default" : "outline"}
-                    className={`h-auto p-3 flex flex-col items-center space-y-1 relative ${
-                      isSelected ? 'ring-2 ring-primary ring-offset-2' : ''
-                    } ${
-                      !isPilotLanguage ? 'opacity-30 cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600' : ''
-                    }`}
-                    onClick={() => isPilotLanguage ? handleLanguageSelect(language.code) : undefined}
-                    disabled={!isPilotLanguage}
+                    className={`h-auto p-3 flex flex-col items-center space-y-1 relative ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}
+                    onClick={() => handleLanguageSelect(language.code)}
                     data-testid={`button-language-${language.code}`}
                   >
                     {isSelected && (
@@ -161,13 +164,25 @@ export default function LanguageSelection() {
                     )}
                     <span className="text-xl">{language.flag}</span>
                     <span className="text-xs font-medium">{language.name}</span>
-                    {!isPilotLanguage && (
-                      <span className="text-xs text-gray-500 dark:text-gray-600 mt-1">Coming Soon</span>
-                    )}
                   </Button>
                 );
               })}
             </div>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="coming-soon">
+                <AccordionTrigger>More Languages (Coming Soon)</AccordionTrigger>
+                <AccordionContent>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 pt-4">
+                    {comingSoonLanguages.map((language) => (
+                      <Button key={language.code} variant="outline" disabled className="h-auto p-3 flex flex-col items-center space-y-1 opacity-50">
+                        <span className="text-xl">{language.flag}</span>
+                        <span className="text-xs font-medium">{language.name}</span>
+                      </Button>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {selectedLanguages.length > 0 && (
               <div className="text-center text-sm text-muted-foreground mb-4">
